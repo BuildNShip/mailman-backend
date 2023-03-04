@@ -38,8 +38,13 @@ class SendBulkMail(APIView):
         if not serializer.is_valid():
             return Response({"hasError": True, "message": "Validation Error", "errors": serializer.errors})
         data = self.data_from_csv(request.FILES.get('inputFile'))
+        if len(data.get('dynamic_contents'))>50:
+            return Response({"hasError": True, "message": "Validation Error", "errors":{
+        "inputFile": [
+            "To mail should not be more than 50."
+        ]
+        } })
         mail_attachments = request.FILES.getlist('mailAttachment')
-        print('mail_attachment', mail_attachments)
         connection = self.make_connection(request_data)
         # Manually open the connection
         connection.open()
