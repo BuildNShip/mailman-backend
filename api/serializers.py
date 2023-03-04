@@ -4,7 +4,8 @@ from rest_framework import serializers
 
 class MailValidateSerializer(serializers.Serializer):
     fromMail = serializers.EmailField(validators=[EmailValidator(message='Invalid email address.')])
-    file = serializers.FileField()
+    inputFile = serializers.FileField()
+    mailAttachment = serializers.FileField(required=False)
     content = serializers.CharField()
     subject = serializers.CharField()
 

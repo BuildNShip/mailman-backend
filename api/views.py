@@ -37,7 +37,8 @@ class SendBulkMail(APIView):
         serializer = MailValidateSerializer(data=request_data)
         if not serializer.is_valid():
             return Response({"hasError": True, "message": "Validation Error", "errors": serializer.errors})
-        data = self.data_from_csv(request.FILES.get('file'))
+        data = self.data_from_csv(request.FILES.get('inputFile'))
+        mail_attachment = request.FILES.get('mailAttachment')
         connection = self.make_connection(request_data)
         # Manually open the connection
         connection.open()
@@ -60,6 +61,7 @@ class SendBulkMail(APIView):
                 [to_mail],
                 connection=connection,
             )
+            email.attach(mail_attachment.name, mail_attachment.read(), mail_attachment.content_type)
             email.send()  # Send the email
         # We need to manually close the connection.
         connection.close()
