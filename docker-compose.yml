@@ -10,6 +10,6 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - /var/www/authserver/assets:/app/assets
+      - /var/log/mailman-web:/var/log/mailman-web
     env_file:
       - .env
