@@ -74,3 +74,37 @@ class SendBulkMail(APIView):
         connection.close()
         data = {"hasError": False, "message": "success"}
         return Response(data)
+
+class SendMail(APIView):
+    def make_connection(self, request_data: dict):
+        EMAIL_HOST = config('EMAIL_HOST')
+        EMAIL_PORT = config('EMAIL_PORT')
+        EMAIL_HOST_USER = request_data.get('fromMail')
+        EMAIL_HOST_PASSWORD = request_data.get('password')
+        EMAIL_USE_TLS = config('EMAIL_USE_TLS')
+
+        connection = get_connection(host=EMAIL_HOST, port=EMAIL_PORT, username=EMAIL_HOST_USER,
+                                    password=EMAIL_HOST_PASSWORD, use_tls=EMAIL_USE_TLS)
+        return connection
+
+    def post(self, request):
+        request_data = request.data
+        subject = request_data.get('subject')
+        content = request_data.get('content')
+        from_mail = request_data.get('fromMail')
+        to_mail = request_data.get('to')
+        mail_attachments = request.FILES.getlist('mailAttachment')
+        connection = self.make_connection(request_data)
+        email = mail.EmailMessage(
+            subject=subject,
+            body=content,
+            from_email=from_mail,
+            to=[to_mail],
+            connection=connection
+        )
+        for mail_attachment in mail_attachments:
+            email.attach(mail_attachment.name, mail_attachment.read(), mail_attachment.content_type)
+        email.send()
+        connection.close()
+        data = {"message": "success"}
+        return Response(data)
