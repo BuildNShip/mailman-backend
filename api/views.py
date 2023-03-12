@@ -106,5 +106,5 @@ class SendMail(APIView):
             email.attach(mail_attachment.name, mail_attachment.read(), mail_attachment.content_type)
         email.send()
         connection.close()
-        data = {"message": "success"}
+        data = {"hasError": False,"message": "success","recipient": to_mail}
         return Response(data)
