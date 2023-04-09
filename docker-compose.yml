@@ -1,15 +1,15 @@
 version: '3'
 services:
-  authserver:
+  mailman:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: mailman-web
-    image: mailman-web
+    container_name: mailman
+    image: mailman
     restart: always
     ports:
-      - "8001:8000"
+      - "8002:8000"
     volumes:
-      - /var/log/mailman-web:/var/log/mailman-web
+      - /var/log/mailman:/var/log/mailman
     env_file:
       - .env
