@@ -1,13 +1,50 @@
 import io
-
 from decouple import config
 from django.core import mail
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.core.mail import get_connection
-
+import requests
+import json
 from .serializers import MailValidateSerializer
+from django.utils import timezone
 
+def logs_dumper(request, emailAddress, status):
+    URL = config("TEXTDB_URL")
+
+    response = requests.get(URL)
+
+    if response.text == '':
+        JSON_LOGS = {
+            "numberOfMails": 0,
+            "successfulMails": 0,
+            "unsuccessfulMails": 0,
+            "entries": []
+         }
+    else:
+        JSON_LOGS = json.loads(response.text)
+
+    query_logs = {
+        'fromMail': emailAddress,
+        'datetime': str(timezone.now()),
+        "location": request.headers.get('location', 'Unknown'),
+        'ipAddress': request.headers.get('x-real-ip', 'Unknown'),
+        'userAgent': request.headers["User-Agent"]
+    }
+
+    number_of_successful_mails = JSON_LOGS["successfulMails"]
+    number_of_unsuccessful_mails = JSON_LOGS["unsuccessfulMails"]
+    if status:
+        JSON_LOGS["successfulMails"] = number_of_successful_mails + 1
+    else:
+        JSON_LOGS["unsuccessfulMails"] = number_of_unsuccessful_mails + 1
+
+    JSON_LOGS["entries"].append(query_logs)
+
+    JSON_LOGS["numberOfMails"] = JSON_LOGS["successfulMails"] + JSON_LOGS["unsuccessfulMails"]
+
+    requests.post(URL, json=JSON_LOGS)
+    return response
 
 class SendBulkMail(APIView):
     def make_connection(self, request_data: dict):
@@ -105,6 +142,8 @@ class SendMail(APIView):
         for mail_attachment in mail_attachments:
             email.attach(mail_attachment.name, mail_attachment.read(), mail_attachment.content_type)
         email.send()
+        status=email.send()
+        logs_dumper(request,from_mail,status)
         connection.close()
         data = {"hasError": False,"message": "success","recipient": to_mail}
         return Response(data)
