@@ -151,5 +151,8 @@ class SendMail(APIView):
         except ValueError:
             status = 0
             data = {"hasError": True,"message": "Invalid mail address","recipient": to_mail}
+        except SMTPAuthenticationError:
+            status = 0
+            data = {"hasError": True,"message": "Invalid from mail or password ","recipient": to_mail}
         logs_dumper(request,from_mail,status)
         return Response(data)
