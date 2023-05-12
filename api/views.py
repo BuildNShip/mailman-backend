@@ -8,6 +8,7 @@ import requests
 import json
 from .serializers import MailValidateSerializer
 from django.utils import timezone
+from smtplib import SMTPRecipientsRefused,SMTPAuthenticationError
 
 def logs_dumper(request, emailAddress, status):
     URL = config("TEXTDB_URL")
@@ -119,7 +120,6 @@ class SendMail(APIView):
         EMAIL_HOST_USER = request_data.get('fromMail')
         EMAIL_HOST_PASSWORD = request_data.get('password')
         EMAIL_USE_TLS = config('EMAIL_USE_TLS')
-
         connection = get_connection(host=EMAIL_HOST, port=EMAIL_PORT, username=EMAIL_HOST_USER,
                                     password=EMAIL_HOST_PASSWORD, use_tls=EMAIL_USE_TLS)
         return connection
@@ -141,9 +141,15 @@ class SendMail(APIView):
         )
         for mail_attachment in mail_attachments:
             email.attach(mail_attachment.name, mail_attachment.read(), mail_attachment.content_type)
-        email.send()
-        status=email.send()
+        try:
+            status = email.send()
+            connection.close()
+            data = {"hasError": False,"message": "success","recipient": to_mail}
+        except SMTPRecipientsRefused:
+            status = 0
+            data = {"hasError": True,"message": "Invalid mail address","recipient": to_mail}
+        except ValueError:
+            status = 0
+            data = {"hasError": True,"message": "Invalid mail address","recipient": to_mail}
         logs_dumper(request,from_mail,status)
-        connection.close()
-        data = {"hasError": False,"message": "success","recipient": to_mail}
         return Response(data)
