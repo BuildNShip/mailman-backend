@@ -9,6 +9,7 @@ import json
 from .serializers import MailValidateSerializer
 from django.utils import timezone
 from smtplib import SMTPRecipientsRefused,SMTPAuthenticationError
+from utils.response import Response
 
 def logs_dumper(request, emailAddress, status):
     URL = config("TEXTDB_URL")
@@ -144,15 +145,15 @@ class SendMail(APIView):
         try:
             status = email.send()
             connection.close()
-            data = {"hasError": False,"message": "success","recipient": to_mail}
+            data = {"hasError": False,"message": "success","recipient": to_mail,'statusCode':200}
         except SMTPRecipientsRefused:
             status = 0
-            data = {"hasError": True,"message": "Invalid mail address","recipient": to_mail}
+            data = {"hasError": True,"message": "Invalid mail address","recipient": to_mail,'statusCode':200}
         except ValueError:
             status = 0
-            data = {"hasError": True,"message": "Invalid mail address","recipient": to_mail}
+            data = {"hasError": True,"message": "Invalid mail address","recipient": to_mail,'statusCode':200}
         except SMTPAuthenticationError:
             status = 0
-            data = {"hasError": True,"message": "Invalid from mail or password ","recipient": to_mail}
+            data = {"hasError": True,"message": "Invalid from mail or password ","recipient": to_mail,'statusCode':1001}
         logs_dumper(request,from_mail,status)
         return Response(data)
