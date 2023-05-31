@@ -8,8 +8,9 @@ import requests
 import json
 from .serializers import MailValidateSerializer
 from django.utils import timezone
-from smtplib import SMTPRecipientsRefused,SMTPAuthenticationError
+from smtplib import SMTPRecipientsRefused, SMTPAuthenticationError
 from utils.response import Response
+
 
 def logs_dumper(request, emailAddress, status):
     URL = config("TEXTDB_URL")
@@ -22,7 +23,7 @@ def logs_dumper(request, emailAddress, status):
             "successfulMails": 0,
             "unsuccessfulMails": 0,
             "entries": []
-         }
+        }
     else:
         JSON_LOGS = json.loads(response.text)
 
@@ -47,6 +48,7 @@ def logs_dumper(request, emailAddress, status):
 
     requests.post(URL, json=JSON_LOGS)
     return response
+
 
 class SendBulkMail(APIView):
     def make_connection(self, request_data: dict):
@@ -77,12 +79,12 @@ class SendBulkMail(APIView):
         if not serializer.is_valid():
             return Response({"hasError": True, "message": "Validation Error", "errors": serializer.errors})
         data = self.data_from_csv(request.FILES.get('inputFile'))
-        if len(data.get('dynamic_contents'))>50:
-            return Response({"hasError": True, "message": "Validation Error", "errors":{
-        "inputFile": [
-            "To mail should not be more than 50."
-        ]
-        } })
+        if len(data.get('dynamic_contents')) > 50:
+            return Response({"hasError": True, "message": "Validation Error", "errors": {
+                "inputFile": [
+                    "To mail should not be more than 50."
+                ]
+            }})
         mail_attachments = request.FILES.getlist('mailAttachment')
         connection = self.make_connection(request_data)
         # Manually open the connection
@@ -113,6 +115,7 @@ class SendBulkMail(APIView):
         connection.close()
         data = {"hasError": False, "message": "success"}
         return Response(data)
+
 
 class SendMail(APIView):
     def make_connection(self, request_data: dict):
@@ -145,15 +148,16 @@ class SendMail(APIView):
         try:
             status = email.send()
             connection.close()
-            data = {"hasError": False,"message": "success","recipient": to_mail,'statusCode':200}
+            data = {"hasError": False, "message": "success", "recipient": to_mail, 'statusCode': 200}
         except SMTPRecipientsRefused:
             status = 0
-            data = {"hasError": True,"message": "Invalid mail address","recipient": to_mail,'statusCode':200}
+            data = {"hasError": True, "message": "Invalid mail address", "recipient": to_mail, 'statusCode': 1001}
         except ValueError:
             status = 0
-            data = {"hasError": True,"message": "Invalid mail address","recipient": to_mail,'statusCode':200}
+            data = {"hasError": True, "message": "Invalid mail address", "recipient": to_mail, 'statusCode': 1001}
         except SMTPAuthenticationError:
             status = 0
-            data = {"hasError": True,"message": "Invalid from mail or password ","recipient": to_mail,'statusCode':1001}
-        logs_dumper(request,from_mail,status)
+            data = {"hasError": True, "message": "Invalid from mail or password ", "recipient": to_mail,
+                    'statusCode': 1001}
+        logs_dumper(request, from_mail, status)
         return Response(data)
